@@ -9,6 +9,7 @@ from scrapy.utils.log import DEFAULT_LOGGING, TopLevelFormatter
 from twisted.python import log
 from twisted.python.log import startLoggingWithObserver
 from twisted.python.logfile import DailyLogFile
+from loguru import logger
 
 from .conf import settings as scrapyrt_settings
 from .utils import to_bytes
@@ -25,15 +26,15 @@ def msg(message=None, **kwargs):
     kwargs['logLevel'] = kwargs.pop('level', INFO)
     kwargs.setdefault('system', 'scrapyrt')
     if message is None:
-        log.msg(**kwargs)
+        logger.info(**kwargs)
     else:
-        log.msg(message, **kwargs)
+        logger.info(message, **kwargs)
 
 
 def err(_stuff=None, _why=None, **kwargs):
     kwargs['logLevel'] = kwargs.pop('level', ERROR)
     kwargs.setdefault('system', 'scrapyrt')
-    log.err(_stuff, _why, **kwargs)
+    logger.error(_stuff, _why, **kwargs)
 
 
 class ScrapyrtFileLogObserver(log.FileLogObserver):
@@ -133,29 +134,30 @@ def setup_spider_logging(spider, settings):
         settings = Settings(settings)
 
     # Looging stdout is a bad idea when mutiple crawls are running
-    # if settings.getbool('LOG_STDOUT'):
-    #     sys.stdout = StreamLogger(logging.getLogger('stdout'))
-    filename = settings.get('LOG_FILE')
-    if filename:
-        encoding = settings.get('LOG_ENCODING')
-        handler = logging.FileHandler(filename, encoding=encoding)
-    elif settings.getbool('LOG_ENABLED'):
-        handler = logging.StreamHandler()
+    if settings.getbool('LOG_STDOUT'):
+        logger.add(sys.stderr, level=settings.get('LOG_LEVEL'), enqueue=True)
     else:
-        handler = logging.NullHandler()
-    formatter = logging.Formatter(
-        fmt=settings.get('LOG_FORMAT'),
-        datefmt=settings.get('LOG_DATEFORMAT')
-    )
-    handler.setFormatter(formatter)
-    handler.setLevel(settings.get('LOG_LEVEL'))
-    filters = [
-        TopLevelFormatter(['scrapy']),
-        SpiderFilter(spider),
-    ]
-    for _filter in filters:
-        handler.addFilter(_filter)
-    logging.root.addHandler(handler)
+        filename = settings.get('LOG_FILE')
+        if filename:
+            encoding = settings.get('LOG_ENCODING')
+            handler = logging.FileHandler(filename, encoding=encoding)
+        elif settings.getbool('LOG_ENABLED'):
+            handler = logging.StreamHandler()
+        else:
+            handler = logging.NullHandler()
+        formatter = logging.Formatter(
+            fmt=settings.get('LOG_FORMAT'),
+            datefmt=settings.get('LOG_DATEFORMAT')
+        )
+        handler.setFormatter(formatter)
+        handler.setLevel(settings.get('LOG_LEVEL'))
+        filters = [
+            TopLevelFormatter(['scrapy']),
+            SpiderFilter(spider),
+        ]
+        for _filter in filters:
+            handler.addFilter(_filter)
+        logger.add(handler, enqueue=True)
 
     _cleanup_functions = [
         lambda: [handler.removeFilter(f) for f in filters],

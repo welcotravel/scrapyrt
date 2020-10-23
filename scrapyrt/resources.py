@@ -9,8 +9,8 @@ from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
 from twisted.web import resource, server
 from twisted.web.error import Error, UnsupportedMethod
+from loguru import logger
 
-from . import log
 from .conf import settings
 from .utils import extract_scrapy_request_args, to_bytes
 
@@ -82,7 +82,7 @@ class ServiceResource(resource.Resource, object):
             else:
                 request.setResponseCode(500)
             if request.code == 500:
-                log.err(failure)
+                logger.error(failure)
         return self.format_error_response(exception, request)
 
     def format_error_response(self, exception, request):
@@ -166,7 +166,7 @@ class CrawlResource(ServiceResource):
             # TODO should be integer not string
             raise Error('400', message=message)
 
-        log.msg("{}".format(api_params))
+        logger.info("{}".format(api_params))
         if api_params.get("start_requests"):
             # start requests passed so 'request' argument is optional
             _request = api_params.get("request", {})

@@ -11,8 +11,8 @@ from scrapy.exceptions import DontCloseSpider
 from scrapy.http import Request
 from twisted.web.error import Error
 from twisted.internet import defer
+from loguru import logger
 
-from . import log
 from .conf import settings
 from .conf.spider_settings import get_scrapyrt_settings, get_project_settings
 from .decorators import deprecated
@@ -143,8 +143,9 @@ class CrawlManager(object):
 
     def get_project_settings(self):
         # set logfile for a job
-        log_file = self._get_log_file_path()
-        custom_settings = get_scrapyrt_settings(log_file=log_file)
+        # log_file = self._get_log_file_path()
+        # custom_settings = get_scrapyrt_settings(log_file=log_file)
+        custom_settings = get_scrapyrt_settings(None)
         return get_project_settings(custom_settings=custom_settings)
 
     @deprecated(use_instead='.crawl()')
@@ -248,5 +249,5 @@ class CrawlManager(object):
         req.dont_filter = True
         msg = u"Created request for spider {} with url {} and kwargs {}"
         msg = msg.format(self.spider_name, url, repr(kwargs))
-        log.msg(msg)
+        logger.info(msg)
         return req
