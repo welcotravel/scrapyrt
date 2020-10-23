@@ -136,28 +136,27 @@ def setup_spider_logging(spider, settings):
     # Looging stdout is a bad idea when mutiple crawls are running
     if settings.getbool('LOG_STDOUT'):
         logger.add(sys.stderr, level=settings.get('LOG_LEVEL'), enqueue=True)
+    filename = settings.get('LOG_FILE')
+    if filename:
+        encoding = settings.get('LOG_ENCODING')
+        handler = logging.FileHandler(filename, encoding=encoding)
+    elif settings.getbool('LOG_ENABLED'):
+        handler = logging.StreamHandler()
     else:
-        filename = settings.get('LOG_FILE')
-        if filename:
-            encoding = settings.get('LOG_ENCODING')
-            handler = logging.FileHandler(filename, encoding=encoding)
-        elif settings.getbool('LOG_ENABLED'):
-            handler = logging.StreamHandler()
-        else:
-            handler = logging.NullHandler()
-        formatter = logging.Formatter(
-            fmt=settings.get('LOG_FORMAT'),
-            datefmt=settings.get('LOG_DATEFORMAT')
-        )
-        handler.setFormatter(formatter)
-        handler.setLevel(settings.get('LOG_LEVEL'))
-        filters = [
-            TopLevelFormatter(['scrapy']),
-            SpiderFilter(spider),
-        ]
-        for _filter in filters:
-            handler.addFilter(_filter)
-        logger.add(handler, enqueue=True)
+        handler = logging.NullHandler()
+    formatter = logging.Formatter(
+        fmt=settings.get('LOG_FORMAT'),
+        datefmt=settings.get('LOG_DATEFORMAT')
+    )
+    handler.setFormatter(formatter)
+    handler.setLevel(settings.get('LOG_LEVEL'))
+    filters = [
+        TopLevelFormatter(['scrapy']),
+        SpiderFilter(spider),
+    ]
+    for _filter in filters:
+        handler.addFilter(_filter)
+    logger.add(handler, enqueue=True)
 
     _cleanup_functions = [
         lambda: [handler.removeFilter(f) for f in filters],

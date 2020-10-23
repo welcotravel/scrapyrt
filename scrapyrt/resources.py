@@ -36,6 +36,7 @@ class ServiceResource(resource.Resource, object):
         try:
             result = resource.Resource.render(self, request)
         except Exception as e:
+            logger.exception("Something went wrong")
             result = self.handle_error(e, request)
 
         if not isinstance(result, Deferred):
